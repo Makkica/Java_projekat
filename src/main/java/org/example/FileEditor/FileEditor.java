@@ -1,4 +1,4 @@
-package org.example;
+package org.example.FileEditor;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,11 +10,16 @@ import java.io.IOException;
 
 public class FileEditor extends JDialog {
     private JPanel contentPane;
-    private JButton buttonOpen;
+    private JButton topButtonOpen;
+
+    private JButton bottomButtonOpen;
     private JButton buttonClose;
     private JButton buttonSave;
     private JTextArea textArea;
-    private JButton buttonGetSelection;
+    private JTextArea textArea1;
+    private JButton topToBottomSelection;
+
+    private JButton bottomToTopSelection;
     String directory; // The default directory to display in the FileDialog
     String selection;
     public FileEditor() {
@@ -22,9 +27,12 @@ public class FileEditor extends JDialog {
         setModal(true);
     //    getRootPane().setDefaultButton(buttonOpen);
 
-        buttonOpen.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onButtonOpen();
+        topButtonOpen.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {onTopButtonOpen();
+            }
+        });
+        bottomButtonOpen.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {onBottomButtonOpen();
             }
         });
         buttonSave.addActionListener(new ActionListener() {
@@ -37,10 +45,11 @@ public class FileEditor extends JDialog {
                 onButtonClose();
             }
         });
-        buttonGetSelection.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onButtonGetSelection();
-            }
+        topToBottomSelection.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {topToBottomSelection();}
+        });
+        bottomToTopSelection.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {bottomToTopSelection();}
         });
 
         // call onCancel() when cross is clicked
@@ -68,8 +77,10 @@ public class FileEditor extends JDialog {
             file = new File(directory, filename); // Create a file object
             out = new FileWriter(file); // And a char stream to write it
             textArea.getLineCount(); // Get text from the text area
-            String s = textArea.getText();
+            String s = textArea.getText() + textArea1.getText();  //save both top and bottom texts into one file
             out.write(s);
+
+
         }
         // Display messages if something goes wrong
         catch (IOException e) {
@@ -87,7 +98,7 @@ public class FileEditor extends JDialog {
         }
     }
 
-    public void loadAndDisplayFile(String directory, String filename) {
+    public void loadAndDisplayFileinTopTextField(String directory, String filename) {
         if ((filename == null) || (filename.length() == 0))
             return;
         File file;
@@ -122,14 +133,60 @@ public class FileEditor extends JDialog {
         }
     }
 
-    private void onButtonOpen() {
+    public void loadAndDisplayFileinBottomTextField(String directory, String filename) {
+        if ((filename == null) || (filename.length() == 0))
+            return;
+        File file;
+        FileReader in = null;
+        // Read and display the file contents. Since we're reading text, we
+        // use a FileReader instead of a FileInputStream.
+        try {
+            file = new File(directory, filename); // Create a file object
+            in = new FileReader(file); // And a char stream to read it
+            char[] buffer = new char[4096]; // Read 4K characters at a time
+            int len; // How many chars read each time
+            textArea1.setText(""); // Clear the text area
+            while ((len = in.read(buffer)) != -1) { // Read a batch of chars
+                String s = new String(buffer, 0, len); // Convert to a string
+                textArea1.append(s); // And display them
+            }
+            this.setTitle("FileViewer: " + filename); // Set the window title
+            textArea1.setCaretPosition(0); // Go to start of file
+        }
+        // Display messages if something goes wrong
+        catch (IOException e) {
+            textArea1.setText(e.getClass().getName() + ": " + e.getMessage());
+            this.setTitle("FileViewer: " + filename + ": I/O Exception");
+        }
+        // Always be sure to close the input stream!
+        finally {
+            try {
+                if (in != null)
+                    in.close();
+            } catch (IOException e) {
+            }
+        }
+    }
+
+    private void onTopButtonOpen() {
         // Create a file dialog box to prompt for a new file to display
         FileDialog f = new FileDialog(this, "Otvori fajl", FileDialog.LOAD);
         f.setDirectory(directory); // Set the default directory
         // Display the dialog and wait for the user's response
         f.setVisible(true);
         directory = f.getDirectory(); // Remember new default directory
-        loadAndDisplayFile(directory, f.getFile()); // Load and display selection
+        loadAndDisplayFileinTopTextField(directory, f.getFile()); // Load and display selection
+        f.dispose(); // Get rid of the dialog box
+    }
+
+    private void onBottomButtonOpen() {
+        // Create a file dialog box to prompt for a new file to display
+        FileDialog f = new FileDialog(this, "Otvori fajl", FileDialog.LOAD);
+        f.setDirectory(directory); // Set the default directory
+        // Display the dialog and wait for the user's response
+        f.setVisible(true);
+        directory = f.getDirectory(); // Remember new default directory
+        loadAndDisplayFileinBottomTextField(directory, f.getFile()); // Load and display selection
         f.dispose(); // Get rid of the dialog box
     }
 
@@ -152,6 +209,15 @@ public class FileEditor extends JDialog {
     private void onButtonGetSelection()
     {
         selection = textArea.getSelectedText();
+    }
+    //adding logic for copying selected text from top text field to bottom text field
+    private void topToBottomSelection(){
+        textArea1.setText(textArea1.getText()+textArea.getSelectedText());
+    }
+
+    //adding logic for copying selected text from bottom text field to top text field
+    private void bottomToTopSelection(){
+        textArea.setText(textArea.getText()+textArea1.getSelectedText());
     }
 
     public static void main(String[] args) {
